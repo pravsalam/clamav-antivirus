@@ -446,6 +446,7 @@ static unsigned int cli_hashsect(fmap_t *map, struct cli_exe_section *s, unsigne
     }
 
     if(!s->rsz) return 0;
+	printf(" raw = %x rsz = %x\n", s->raw, s->rsz);
     if(!(hashme=fmap_need_off_once(map, s->raw, s->rsz))) {
         cli_dbgmsg("cli_hashsect: unable to read section data\n");
         return 0;
@@ -462,8 +463,13 @@ static unsigned int cli_hashsect(fmap_t *map, struct cli_exe_section *s, unsigne
 }
 
 /* check hash section sigs */
-static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
+int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
 {
+	printf(" scan_pe_mdb entered\n");
+	if(ctx->engine == NULL)
+	{
+		printf(" error in scan_pe_mdb\n");
+	}
     struct cli_matcher * mdb_sect = ctx->engine->hm_mdb;
     unsigned char * hashset[CLI_HASH_AVAIL_TYPES];
     const char * virname = NULL;
@@ -472,7 +478,7 @@ static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
     enum CLI_HASH_TYPE type;
     int ret = CL_CLEAN;
     unsigned char * md5 = NULL;
- 
+    int i;
     /* pick hashtypes to generate */
     for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
         foundsize[type] = cli_hm_have_size(mdb_sect, type, exe_section->rsz);
@@ -490,11 +496,18 @@ static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
             hashset[type] = NULL;
         }
     }
-
+	printf(" generate hashes \n");
+	if(hashset[type] == NULL)
+		printf(" hashset is empty\n");
     /* Generate hashes */
+	printf(" gen hashes \n");
+	for(i = CLI_HASH_MD5; i< CLI_HASH_AVAIL_TYPES;i++)
+	{
+		printf(" i=%d foundsize = %d foundwild = %d\n", i, foundsize[i],foundwild[i]);
+	}
     cli_hashsect(*ctx->fmap, exe_section, hashset, foundsize, foundwild);
-
     /* Print hash */
+    cli_debug_flag = 1;
     if (cli_debug_flag) {
         md5 = hashset[CLI_HASH_MD5];
         if (md5) {
@@ -528,7 +541,8 @@ static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
             cli_dbgmsg("MDB: %u:notgenerated\n", exe_section->rsz);
         }
     }
-
+	cli_debug_flag = 0;
+	printf(" will start scans\n");
     /* Do scans */
     for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
        if(foundsize[type] && cli_hm_scan(hashset[type], exe_section->rsz, &virname, mdb_sect, type) == CL_VIRUS) {
@@ -668,6 +682,7 @@ static void add_section_info(cli_ctx *ctx, struct cli_exe_section *s)
 
 int cli_scanpe(cli_ctx *ctx)
 {
+	printf(" Is this even called\n");
     uint16_t e_magic; /* DOS signature ("MZ") */
     uint16_t nsections;
     uint32_t e_lfanew; /* address of new exe header */
@@ -724,16 +739,19 @@ int cli_scanpe(cli_ctx *ctx)
 #endif
     map = *ctx->fmap;
     if(fmap_readn(map, &e_magic, 0, sizeof(e_magic)) != sizeof(e_magic)) {
+	printf("Can't read DOS signature\n");
         cli_dbgmsg("Can't read DOS signature\n");
         return CL_CLEAN;
-    }
-
+   }
+	printf(" custom prints emagic =%d\n",e_magic);
     if(EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE && EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE_OLD) {
+	printf("Invalid DOS signature\n");
         cli_dbgmsg("Invalid DOS signature\n");
         return CL_CLEAN;
     }
 
     if(fmap_readn(map, &e_lfanew, 58 + sizeof(e_magic), sizeof(e_lfanew)) != sizeof(e_lfanew)) {
+	printf("Can't read new header address\n");
         cli_dbgmsg("Can't read new header address\n");
         /* truncated header? */
         if(DETECT_BROKEN_PE) {

@@ -1,0 +1,116 @@
+From 70c8df9ca0900cc781c2144a3b72f8cc0526e009 Mon Sep 17 00:00:00 2001
+From: Arun Olappamanna Vasudevan <aolappamanna@cs.stonybrook.edu>
+Date: Sat, 21 Mar 2015 06:01:53 -0400
+Subject: [PATCH] libclamav: added api for scanning memory containing entire
+ file data
+
+---
+ libclamav/clamav.h      |  4 ++++
+ libclamav/fmap.c        | 20 ++++++++++++++++++++
+ libclamav/fmap.h        |  3 +++
+ libclamav/libclamav.map |  2 ++
+ libclamav/scanners.c    | 20 ++++++++++++++++++++
+ 5 files changed, 49 insertions(+)
+
+diff --git a/libclamav/clamav.h b/libclamav/clamav.h
+index 40a62a2..4bbbe29 100644
+--- a/libclamav/clamav.h
++++ b/libclamav/clamav.h
+@@ -762,6 +762,10 @@ int cl_finish_hash(void *ctx, void *buf);
+ void cl_hash_destroy(void *ctx);
+ /* End of crypto/hashing functions */
+ 
++/* buffer scanning */
++int cl_scanbuff(const void *buffer, size_t length, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions);
++int cl_scanbuff_callback(const void *buffer, size_t length, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context);
++
+ #ifdef __cplusplus
+ }
+ #endif
+diff --git a/libclamav/fmap.c b/libclamav/fmap.c
+index 875ac3e..92dab28 100644
+--- a/libclamav/fmap.c
++++ b/libclamav/fmap.c
+@@ -792,3 +792,23 @@ extern void cl_fmap_close(cl_fmap_t *map)
+ {
+     funmap(map);
+ }
++
++fmap_t *fmap_buff_check_empty(const void *buff, size_t len, int *empty) {
++    fmap_t *m;
++
++    *empty = 0;
++    if(!len) {
++	cli_dbgmsg("fmap: attempted void mapping\n");
++	*empty = 1;
++	return NULL;
++    }
++    m = cl_fmap_open_memory(buff, len);
++    if (!m)
++	return NULL;
++    return m;
++}
++
++fmap_t *fmap_buff(const void *buff, size_t len) {
++    int unused;
++    return fmap_buff_check_empty(buff, len, &unused);
++}
+diff --git a/libclamav/fmap.h b/libclamav/fmap.h
+index 6d0ca0f..6ed5028 100644
+--- a/libclamav/fmap.h
++++ b/libclamav/fmap.h
+@@ -182,4 +182,7 @@ int fmap_dump_to_file(fmap_t *map, const char *tmpdir, char **outname, int *outf
+ /* deprecated */
+ int fmap_fd(fmap_t *m);
+ 
++fmap_t *fmap_buff(const void *buff, size_t len);
++fmap_t *fmap_buff_check_empty(const void *buff, size_t len, int *empty);
++
+ #endif
+diff --git a/libclamav/libclamav.map b/libclamav/libclamav.map
+index 970e18d..547a8ce 100644
+--- a/libclamav/libclamav.map
++++ b/libclamav/libclamav.map
+@@ -57,6 +57,8 @@ CLAMAV_PUBLIC {
+     cl_finish_hash;
+     cl_hash_destroy;
+     cl_engine_stats_enable;
++    cl_scanbuff;
++    cl_scanbuff_callback;
+ };
+ CLAMAV_PRIVATE {
+   global:
+diff --git a/libclamav/scanners.c b/libclamav/scanners.c
+index 2b4e543..b954eb9 100644
+--- a/libclamav/scanners.c
++++ b/libclamav/scanners.c
+@@ -3589,6 +3589,26 @@ int cl_scanfile_callback(const char *filename, const char **virname, unsigned lo
+     return ret;
+ }
+ 
++int cl_scanbuff(const void *buffer, size_t length, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions)
++{
++    return cl_scanbuff_callback(buffer, length, virname, scanned, engine, scanoptions, NULL);
++}
++
++int cl_scanbuff_callback(const void *buffer, size_t length, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context)
++{
++    cl_fmap_t *m;
++    int empty;
++
++    if(!buffer)
++        return CL_EARG;
++
++    m = fmap_buff(buffer, length);
++    if(!m)
++	return CL_EMEM;
++
++    return cl_scanmap_callback(m, virname, scanned, engine, scanoptions, context);
++}
++
+ /*
+ Local Variables:
+    c-basic-offset: 4
+-- 
+1.9.3
+

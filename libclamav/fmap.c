@@ -480,7 +480,10 @@ static const void *handle_need(fmap_t *m, size_t at, size_t len, int lock) {
 
     at += m->nested_offset;
     if(!CLI_ISCONTAINED(0, m->real_len, at, len))
+    {
+	printf(" not contained in mapping\n");
 	return NULL;
+    }
 
     fmap_aging(m);
 
@@ -791,4 +794,24 @@ int fmap_fd(fmap_t *m)
 extern void cl_fmap_close(cl_fmap_t *map)
 {
     funmap(map);
+}
+
+fmap_t *fmap_buff_check_empty(const void *buff, size_t len, int *empty) {
+    fmap_t *m;
+
+    *empty = 0;
+    if(!len) {
+	cli_dbgmsg("fmap: attempted void mapping\n");
+	*empty = 1;
+	return NULL;
+    }
+    m = cl_fmap_open_memory(buff, len);
+    if (!m)
+	return NULL;
+    return m;
+}
+
+fmap_t *fmap_buff(const void *buff, size_t len) {
+    int unused;
+    return fmap_buff_check_empty(buff, len, &unused);
 }

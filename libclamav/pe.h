@@ -1,4 +1,4 @@
-/*
+/**
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu, Tomasz Kojm
@@ -159,6 +159,7 @@ struct cli_pe_hook_data {
 };
 
 int cli_scanpe(cli_ctx *ctx);
+int scan_pe_mdb (cli_ctx *ctx, struct cli_exe_section *exe_section);
 
 #define CL_CHECKFP_PE_FLAG_NONE             0x00000000
 #define CL_CHECKFP_PE_FLAG_STATS            0x00000001
