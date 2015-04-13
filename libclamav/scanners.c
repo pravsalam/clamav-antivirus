@@ -2546,7 +2546,7 @@ static int dispatch_prescan(clcb_pre_scan cb, cli_ctx *ctx, const char *filetype
 
 static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 {
-	printf(" Magic scan descriptor is called type =%d\n",type);
+	//printf(" Magic scan descriptor is called type =%d\n",type);
 	int ret = CL_CLEAN;
 	cli_file_t dettype = 0;
 	uint8_t typercg = 1;
@@ -3213,7 +3213,7 @@ static int cli_base_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
 int cli_magic_scandesc(int desc, cli_ctx *ctx)
 {
-	printf(" cli_magic_scandesc called\n");
+    //printf(" cli_magic_scandesc called\n");
     return cli_base_scandesc(desc, ctx, CL_TYPE_ANY);
     //return cli_base_scandesc(desc, ctx, CL_TYPE_MSEXE);
 	
@@ -3316,7 +3316,7 @@ int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_
 /* For map scans that are not forced to disk */
 int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_file_t type)
 {
-	printf(" cli_map_scandesc called with tye = %d\n", type);
+    //printf(" cli_map_scandesc called with tye = %d\n", type);
     off_t old_off = map->nested_offset;
     size_t old_len = map->len;
     size_t old_real_len = map->real_len;
@@ -3379,7 +3379,7 @@ int cli_mem_scandesc(const void *buffer, size_t length, cli_ctx *ctx)
 
 static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context)
 {
-	printf(" scan_common\n");
+    //printf(" scan_common\n");
     cli_ctx ctx;
     int rc;
     int rc_section;
@@ -3453,12 +3453,18 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
 #endif
 
     cli_logg_setup(&ctx);
-	printf(" not sure which function will be called\n");
+    //printf(" not sure which function will be called\n");
     rc = map ? cli_map_scandesc(map, 0, map->len, &ctx, CL_TYPE_ANY) : cli_magic_scandesc(desc, &ctx);
-    rc_section = cl_scan_pe_buff(map, &ctx);
-	printf(" section scan returned =%d\n", rc_section);
-	if(rc_section == CL_VIRUS)
-		printf("Virus detected in section %s\n", cli_get_last_virus(&ctx) ? cli_get_last_virus(&ctx) : "Name");
+	if(map)
+	{
+    	rc_section = cl_scan_pe_buff(map, &ctx);
+		//printf(" section scan returned =%d\n", rc_section);
+		if(rc_section == CL_VIRUS)
+        {
+			printf("Virus detected in section %s\n", cli_get_last_virus(&ctx) ? cli_get_last_virus(&ctx) : "Name");
+            rc = CL_VIRUS;
+        }
+	}
     //rc = map ? cli_map_scandesc(map, 0, map->len, &ctx, CL_TYPE_MSEXE) : cli_magic_scandesc(desc, &ctx);
 
 #if HAVE_JSON
@@ -3552,7 +3558,7 @@ int cl_scandesc_callback(int desc, const char **virname, unsigned long int *scan
 
 int cl_scanmap_callback(cl_fmap_t *map, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context)
 {
-	printf("cl_scanmap_callback\n");
+    //printf("cl_scanmap_callback\n");
     return scan_common(-1, map, virname, scanned, engine, scanoptions, context);
 }
 
@@ -3622,7 +3628,7 @@ int cl_scanbuff(const void *buffer, size_t length, const char **virname, unsigne
 	unsigned char md5_hash[16];
 	MD5_CTX md5context;
 	int i;
-	printf("cl_scanbuff called\n");
+	//printf("cl_scanbuff called\n");
 	cl_debug();
 	MD5_Init(&md5context);
 	MD5_Update(&md5context, buffer, length);
@@ -3635,7 +3641,7 @@ int cl_scanbuff(const void *buffer, size_t length, const char **virname, unsigne
 
 int cl_scanbuff_callback(const void *buffer, size_t length, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context)
 {
-	printf(" cl_scanbuff_callback\n");
+    //printf(" cl_scanbuff_callback\n");
     cl_fmap_t *m;
     int empty;
 
@@ -3657,14 +3663,15 @@ End:
 */
 static int cl_scan_pe_buff(cl_fmap_t *map, cli_ctx *ctx)
 {
-                printf(" start of section scan\n");
+                //printf(" start of section scan\n");
                 int nsections = 1;
                 struct cli_exe_section *exe_section;
                 struct pe_image_section_hdr *section_hdr;
                 int valign = 4096;
                 int falign = 4096;
                 int ret;
-		//ctx->fmap++;
+		        
+                //ctx->fmap++;
                 /*exe_section = (struct cli_exe_section *) cli_calloc(nsections, sizeof(struct cli_exe_section));
                 section_hdr = (struct pe_image_section_hdr *) cli_calloc(nsections, sizeof(struct pe_image_section_hdr));*/
                 exe_section = (struct cli_exe_section *) malloc(sizeof(struct cli_exe_section));
@@ -3674,9 +3681,9 @@ static int cl_scan_pe_buff(cl_fmap_t *map, cli_ctx *ctx)
                         printf(" Malloc failed\n");
                         return CL_CLEAN;
                 }
-                printf(" will call fmap_readn\n");
+                //printf(" will call fmap_readn\n");
                 fmap_readn(map, section_hdr, 0,sizeof(*section_hdr));
-                printf(" page size = %d\n", map->pgsz);
+                //printf(" page size = %d\n", map->pgsz);
 
                 exe_section->rva = PEALIGN(EC32(section_hdr->VirtualAddress), valign);
                 exe_section->vsz = PESALIGN(EC32(section_hdr->VirtualSize), valign);

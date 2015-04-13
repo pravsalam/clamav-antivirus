@@ -465,11 +465,10 @@ static unsigned int cli_hashsect(fmap_t *map, struct cli_exe_section *s, unsigne
 /* check hash section sigs */
 int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
 {
-	printf(" scan_pe_mdb entered\n");
-	if(ctx->engine == NULL)
-	{
-		printf(" error in scan_pe_mdb\n");
-	}
+    //printf(" scan_pe_mdb entered\n");
+    if(ctx->engine == NULL) { 
+        printf("Error in scan_pe_mdb function, ctx->engine is NULL.\n");
+    }
     struct cli_matcher * mdb_sect = ctx->engine->hm_mdb;
     unsigned char * hashset[CLI_HASH_AVAIL_TYPES];
     const char * virname = NULL;
@@ -496,18 +495,21 @@ int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
             hashset[type] = NULL;
         }
     }
-	printf(" generate hashes \n");
-	if(hashset[type] == NULL)
-		printf(" hashset is empty\n");
+    /*
+    printf(" generate hashes \n");
+    if(hashset[type] == NULL)
+        printf(" hashset is empty\n");
+    */
     /* Generate hashes */
-	printf(" gen hashes \n");
-	for(i = CLI_HASH_MD5; i< CLI_HASH_AVAIL_TYPES;i++)
-	{
-		printf(" i=%d foundsize = %d foundwild = %d\n", i, foundsize[i],foundwild[i]);
-	}
+    /*
+    printf(" gen hashes \n");
+    for(i = CLI_HASH_MD5; i< CLI_HASH_AVAIL_TYPES;i++) {
+        printf(" i=%d foundsize = %d foundwild = %d\n", i, foundsize[i],foundwild[i]);
+    }
+    */
     cli_hashsect(*ctx->fmap, exe_section, hashset, foundsize, foundwild);
     /* Print hash */
-    cli_debug_flag = 1;
+    //cli_debug_flag = 1;
     if (cli_debug_flag) {
         md5 = hashset[CLI_HASH_MD5];
         if (md5) {
@@ -541,8 +543,8 @@ int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
             cli_dbgmsg("MDB: %u:notgenerated\n", exe_section->rsz);
         }
     }
-	cli_debug_flag = 0;
-	printf(" will start scans\n");
+    //cli_debug_flag = 0;
+    //printf(" will start scans\n");
     /* Do scans */
     for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
        if(foundsize[type] && cli_hm_scan(hashset[type], exe_section->rsz, &virname, mdb_sect, type) == CL_VIRUS) {

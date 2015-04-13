@@ -129,7 +129,6 @@ static inline void fmap_unneed_ptr(fmap_t *m, const void *ptr, size_t len)
 
 static inline int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len)
 {
-	printf(" m->len = %d at =%d len = %d\n", m->len, at, len);
     const void *src;
 
     if(at == m->len || !len)
@@ -138,14 +137,14 @@ static inline int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len)
 	return -1;
     if(len > m->len - at)
 	len = m->len - at;
-	printf(" will call fmap_read_off_once\n");
-    src = fmap_need_off_once(m, at, len);
-	printf(" finished fmap_read_off_once\n");
+	//printf(" will call fmap_read_off_once\n");
+	src = fmap_need_off_once(m, at, len);
+	//printf(" finished fmap_read_off_once\n");
     if(!src)
 	return -1;
-	printf(" memcpy called\n");
-    memcpy(dst, src, len);
-	printf(" exiting memcpy\n");
+	//printf(" memcpy called\n");
+	memcpy(dst, src, len);
+	//printf(" exiting memcpy\n");
     return len;
 }
 

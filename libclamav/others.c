@@ -191,7 +191,7 @@ static void cli_rarload(void) {
 
 void cl_debug(void)
 {
-    cli_debug_flag = 1;
+    cli_debug_flag = 0;
 }
 
 void cl_always_gen_section_hash(void)
